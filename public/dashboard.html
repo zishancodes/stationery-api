@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Stationery Inventory</title>
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="dashboard-page">
@@ -17,45 +19,148 @@
                 <span>Khushi Stationery</span>
             </div>
 
-            <nav class="sidebar-nav" aria-label="Main navigation">
-                <a href="/dashboard.html" class="nav-link active">Dashboard</a>
-                <a href="#products" class="nav-link">Products</a>
-                <a href="#stockHistory" class="nav-link">Stock History</a>
-            </nav>
+            <!-- Navigation bar -->
+        <nav class="sidebar-nav" aria-label="Main navigation">
+            <a href="/dashboard.html" class="nav-link active">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+        
+            <a href="#products" class="nav-link">
+                <i class="fa-solid fa-box"></i>
+                <span>Products</span>
+            </a>
+        
+            <a href="#stockHistory" class="nav-link">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Stock History</span>
+            </a>
+        </nav>
 
             <div class="sidebar-bottom">
-                <p id="sidebarUser">Signed in</p>
-                <button id="logoutButton" type="button">Log out</button>
+                <div class="sidebar-profile">
+                    <div class="profile-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+            
+                    <div class="profile-info">
+                        <p id="sidebarUser">Signed in</p>
+                        <span id="sidebarUserRole">Staff</span>
+                    </div>
+                </div>
+            
+                <button id="logoutButton" type="button">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Log out</span>
+                </button>
             </div>
         </aside>
 
         <main class="dashboard-main">
-            <header class="dashboard-header">
-                <div>
-                    <p class="eyebrow">INVENTORY MANAGEMENT</p>
-                    <h1>Dashboard</h1>
-                    <p class="dashboard-subtitle">Here's what's happening in your store.</p>
+        <header class="dashboard-header">
+            <div class="header-left">
+                <p class="eyebrow">Overview</p>
+                <h1>Hey <span id="headerUserName">Zishan</span> 👋, welcome back!</h1>
+                <p class="dashboard-subtitle">Here is what's happening with your inventory today.</p>
+            </div>
+        
+            <div class="header-right">
+                <!-- Global Search Bar -->
+                <div class="header-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="globalSearchInput" placeholder="Search Products / SKU...">
                 </div>
-                <span id="userRole" class="role-label">Loading role...</span>
-            </header>
+        
+                <!-- Notification Bell -->
+                <button class="header-icon-btn" id="notificationButton" type="button" aria-label="Notifications"
+                    title="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </button>
+        
+                <!-- Top Profile Pill -->
+                <div class="header-profile">
+                    <div class="profile-avatar sm-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <span id="topBarUser" class="profile-name">Zishan Ahmad</span>
+                </div>
+            </div>
+        </header>
+
 
             <section class="summary-grid" aria-label="Inventory summary">
+            
                 <article class="summary-card">
-                    <p>Total products</p>
+                    <div class="summary-card-top">
+                        <p>Total Products</p>
+                        <div class="summary-icon products-icon">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </div>
+                    </div>
                     <h2 id="totalProducts">—</h2>
-                    <span>Products in inventory</span>
+                    <span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> Active items</span>
                 </article>
-
+            
                 <article class="summary-card">
-                    <p>Total units in stock</p>
+                    <div class="summary-card-top">
+                        <p>In Stock</p>
+                        <div class="summary-icon units-icon">
+                            <i class="fa-solid fa-cubes"></i>
+                        </div>
+                    </div>
                     <h2 id="totalUnits">—</h2>
-                    <span>Units across all products</span>
+                    <span class="trend-badge positive"><i class="fa-solid fa-check"></i> Total units</span>
                 </article>
-
+            
                 <article class="summary-card">
-                    <p>Low-stock products</p>
+                    <div class="summary-card-top">
+                        <p>Low Stock</p>
+                        <div class="summary-icon low-stock-icon">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
                     <h2 id="lowStockCount">—</h2>
-                    <span>Products needing attention</span>
+                    <span class="trend-badge warning"><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</span>
+                </article>
+            
+                <article class="summary-card">
+                    <div class="summary-card-top">
+                        <p>Out of Stock</p>
+                        <div class="summary-icon out-of-stock-icon">
+                            <i class="fa-solid fa-ban"></i>
+                        </div>
+                    </div>
+                    <h2 id="outOfStockCount">0</h2>
+                    <span class="trend-badge danger"><i class="fa-solid fa-xmark"></i> Out of stock</span>
+                </article>
+            
+            </section>
+
+            <!-- charts grid-->
+            <section class="charts-grid" aria-label="Visual analytics">
+                <article class="chart-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Category Breakdown</h2>
+                            <p>Total stock units per category.</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </article>
+            
+                <article class="chart-card">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Stock Status</h2>
+                            <p>Proportion of inventory health.</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                 </article>
             </section>
 
@@ -228,6 +333,23 @@
                             </tr>
                         </tbody>
                     </table>
+
+                    <!-- Stock History Pagination -->
+                    <div class="pagination" id="stockHistoryPagination">
+                        <p id="stockHistoryPaginationInfo">Showing stock history...</p>
+                    
+                        <div class="pagination-controls">
+                            <button id="previousHistoryPageButton" type="button" disabled>
+                                ← Previous
+                            </button>
+                    
+                            <span id="currentHistoryPageInfo">Page 1 of 1</span>
+                    
+                            <button id="nextHistoryPageButton" type="button" disabled>
+                                Next →
+                            </button>
+                        </div>
+                    </div>
                 </div>
             
                 <p id="stockHistoryMessage" role="status" aria-live="polite"></p>

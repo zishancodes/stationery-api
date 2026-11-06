@@ -20,7 +20,17 @@ const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./utils/errorHandler");
 
 // Security: HTTP headers
-app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+    },
+  })
+);
 
 // Security: API rate limiting
 const limiter = rateLimit({

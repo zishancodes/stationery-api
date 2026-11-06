@@ -4,6 +4,10 @@ const token = sessionStorage.getItem("token");
 let currentPage = 1;
 const productsPerPage = 10;
 
+// Stock history pagination state
+let currentHistoryPage = 1;
+const historyPerPage = 5;
+
 const storedUser = sessionStorage.getItem("user");
 
 // If the user hasn't logged in, send them to the login page.
@@ -13,11 +17,19 @@ if (!token || !storedUser) {
   try {
     const user = JSON.parse(storedUser);
 
+    // Update the top header with logged-in user details.
+    document.getElementById("headerUserName").textContent =
+      user.name || user.email || "User";
+
+    document.getElementById("topBarUser").textContent =
+      user.name || user.email || "User";
+
     // Display the signed-in user's name and role.
     document.getElementById("sidebarUser").textContent =
       user.name || user.email || "Signed in";
 
-    document.getElementById("userRole").textContent = user.role || "staff";
+    document.getElementById("sidebarUserRole").textContent =
+      user.role || "staff";
 
     // Only show the Add Product button for admins.
     if (user.role === "admin") {
@@ -64,6 +76,158 @@ document.getElementById("logoutButton").addEventListener("click", () => {
   sessionStorage.removeItem("user");
   window.location.replace("/login.html");
 });
+
+// Charts Related........
+
+let categoryChartInstance = null;
+let statusChartInstance = null;
+
+async function renderCharts() {
+  try {
+    // 1. Fetch all products without pagination to calculate chart metrics
+    const response = await fetch("/api/products?limit=1000", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) return;
+
+    const products = result.data || [];
+
+    // 2. Process Category Breakdown data
+    const categoryTotals = {};
+    let inStockCount = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    products.forEach((p) => {
+      const cat = p.category || "Uncategorized";
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(p.stock || 0);
+
+      const stock = Number(p.stock || 0);
+      if (stock === 0) outOfStockCount++;
+      else if (stock <= 5) lowStockCount++;
+      else inStockCount++;
+    });
+
+    const categoryLabels = Object.keys(categoryTotals);
+    const categoryData = Object.values(categoryTotals);
+
+    // 3. Render Category Bar Chart
+    const categoryCtx = document
+      .getElementById("categoryChart")
+      .getContext("2d");
+    if (categoryChartInstance) categoryChartInstance.destroy();
+
+    categoryChartInstance = new Chart(categoryCtx, {
+      type: "bar",
+      data: {
+        labels: categoryLabels,
+        datasets: [
+          {
+            label: "Units in Stock",
+            data: categoryData,
+            backgroundColor: "#7c3aed",
+            borderRadius: 8,
+            barThickness: 32,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: "#f1f5f9" }, beginAtZero: true },
+        },
+      },
+    });
+
+    // 4. Render Premium Donut Chart
+    const statusCtx = document.getElementById("statusChart").getContext("2d");
+    if (statusChartInstance) statusChartInstance.destroy();
+
+    const totalStatusItems = inStockCount + lowStockCount + outOfStockCount;
+
+    // Custom plugin to draw text inside the center hole of the doughnut chart
+    const centerTextPlugin = {
+      id: "centerText",
+      beforeDraw(chart) {
+        const { width, height, ctx } = chart;
+        ctx.save();
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Draw Subtitle / Label
+        ctx.font = "600 12px Inter, sans-serif";
+        ctx.fillStyle = "#64748b";
+        ctx.fillText("Total Items", width / 2, height / 2 - 10);
+
+        // Draw Main Counter Value
+        ctx.font = "800 22px Inter, sans-serif";
+        ctx.fillStyle = "#0f172a";
+        ctx.fillText(totalStatusItems, width / 2, height / 2 + 12);
+
+        ctx.restore();
+      },
+    };
+
+    statusChartInstance = new Chart(statusCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["In Stock", "Low Stock", "Out of Stock"],
+        datasets: [
+          {
+            data: [inStockCount, lowStockCount, outOfStockCount],
+            backgroundColor: ["#22C55E", "#f59e0b", "#ef4444"],
+            hoverBackgroundColor: ["#16a34a", "#d97706", "#dc2626"],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+            borderRadius: 6, // Rounded edges on chart segments
+            spacing: 3, // Slight gap between slices
+          },
+        ],
+      },
+      plugins: [centerTextPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              usePointStyle: true,
+              pointStyle: "circle",
+              padding: 16,
+              boxWidth: 8,
+              font: {
+                family: "Inter",
+                size: 12,
+                weight: "600",
+              },
+              color: "#475569",
+            },
+          },
+          tooltip: {
+            backgroundColor: "#0f172a",
+            padding: 10,
+            cornerRadius: 10,
+            titleFont: { family: "Inter", size: 12, weight: "700" },
+            bodyFont: { family: "Inter", size: 12 },
+          },
+        },
+        cutout: "76%", // Make ring thinner for a sleek modern outline
+      },
+    });
+  } catch (error) {
+    console.error("Error rendering charts:", error);
+  }
+}
 
 async function loadProducts() {
   const productTableBody = document.getElementById("productTableBody");
@@ -121,29 +285,37 @@ async function loadProducts() {
     window.products = result.data;
     const products = window.products;
 
-    const totalUnits = products.reduce((total, product) => {
-      return total + Number(product.stock || 0);
-    }, 0);
-
-    const lowStockResponse = await fetch("/api/products/low-stock", {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const lowStockResponse = await fetch(
+      "/api/products/low-stock",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     const lowStockResult = await lowStockResponse.json();
     if (!lowStockResponse.ok || !lowStockResult.success) {
       throw new Error("Unable to load low-stock products.");
     }
 
-    const lowStockCount = lowStockResult.count;
+    // Filter out products with exactly 0 stock for "Out of Stock", and 1-5 for "Low Stock"
+    const allLowStockProducts = lowStockResult.data || [];
+    const outOfStockCount = allLowStockProducts.filter(
+      (p) => p.stock === 0,
+    ).length;
+    const lowStockCount = allLowStockProducts.filter(
+      (p) => p.stock > 0 && p.stock <= 5,
+    ).length;
 
     document.getElementById("totalProducts").textContent =
       result.pagination.totalProducts;
 
-    document.getElementById("totalUnits").textContent = totalUnits;
+    document.getElementById("totalUnits").textContent =
+      result.pagination.totalUnits;
 
     document.getElementById("lowStockCount").textContent = lowStockCount;
+    document.getElementById("outOfStockCount").textContent = outOfStockCount;
 
     const pagination = result.pagination;
 
@@ -174,6 +346,7 @@ async function loadProducts() {
     }
 
     renderProducts(products);
+    renderCharts();
   } catch (error) {
     console.error("Error loading products:", error);
     productTableBody.innerHTML = `
@@ -581,8 +754,6 @@ editProductForm.addEventListener("submit", async (event) => {
     document.getElementById("addProductButton").hidden =
       JSON.parse(sessionStorage.getItem("user")).role !== "admin";
 
-    document.getElementById("addProductButton").hidden =
-      JSON.parse(sessionStorage.getItem("user")).role !== "admin";
   } catch (error) {
     console.error("Update product failed:", error);
 
@@ -610,11 +781,15 @@ async function loadStockHistory() {
   const stockHistoryTableBody = document.getElementById(
     "stockHistoryTableBody",
   );
-
   const stockHistoryMessage = document.getElementById("stockHistoryMessage");
 
   try {
-    const response = await fetch("/api/stock-history", {
+    const params = new URLSearchParams({
+      page: String(currentHistoryPage),
+      limit: String(historyPerPage),
+    });
+
+    const response = await fetch(`/api/stock-history?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -637,6 +812,13 @@ async function loadStockHistory() {
 
       row.appendChild(cell);
       stockHistoryTableBody.appendChild(row);
+
+      document.getElementById("stockHistoryPaginationInfo").textContent =
+        "Showing 0 of 0 records";
+      document.getElementById("currentHistoryPageInfo").textContent =
+        "Page 1 of 1";
+      document.getElementById("previousHistoryPageButton").disabled = true;
+      document.getElementById("nextHistoryPageButton").disabled = true;
       return;
     }
 
@@ -663,6 +845,28 @@ async function loadStockHistory() {
 
       stockHistoryTableBody.appendChild(row);
     });
+
+    const pagination = result.pagination;
+    const startRecord =
+      pagination.totalRecords === 0
+        ? 0
+        : (pagination.page - 1) * pagination.limit + 1;
+    const endRecord = Math.min(
+      pagination.page * pagination.limit,
+      pagination.totalRecords,
+    );
+
+    document.getElementById("stockHistoryPaginationInfo").textContent =
+      `Showing ${startRecord}–${endRecord} of ${pagination.totalRecords} records`;
+
+    document.getElementById("currentHistoryPageInfo").textContent =
+      `Page ${pagination.page} of ${Math.max(pagination.totalPages, 1)}`;
+
+    document.getElementById("previousHistoryPageButton").disabled =
+      !pagination.hasPreviousPage;
+
+    document.getElementById("nextHistoryPageButton").disabled =
+      !pagination.hasNextPage;
   } catch (error) {
     console.error("Error loading stock history:", error);
     stockHistoryMessage.textContent = error.message;
@@ -670,4 +874,35 @@ async function loadStockHistory() {
   }
 }
 
+const previousHistoryPageButton = document.getElementById(
+  "previousHistoryPageButton",
+);
+const nextHistoryPageButton = document.getElementById("nextHistoryPageButton");
+
+previousHistoryPageButton.addEventListener("click", async () => {
+  if (currentHistoryPage > 1) {
+    currentHistoryPage--;
+    await loadStockHistory();
+  }
+});
+
+nextHistoryPageButton.addEventListener("click", async () => {
+  currentHistoryPage++;
+  await loadStockHistory();
+});
+
 loadStockHistory();
+
+
+// Safe Event Listener for Global Search
+const globalSearchInput = document.getElementById("globalSearchInput");
+if (globalSearchInput) {
+  globalSearchInput.addEventListener("input", (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const mainSearchInput = document.getElementById("productSearch");
+    if (mainSearchInput) {
+      mainSearchInput.value = searchTerm;
+      mainSearchInput.dispatchEvent(new Event("input"));
+    }
+  });
+}

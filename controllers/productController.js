@@ -204,7 +204,7 @@ const getProduct = async (req, res, next) => {
       });
     }
 
-    if (limit > 100) {
+    if (limit > 1000) {
       return res.status(400).json({
         success: false,
         message: "Limit cannot be greater than 100",
@@ -313,6 +313,19 @@ const getProduct = async (req, res, next) => {
 
     //Pagination
     const totalProducts = await Product.countDocuments(filter);
+
+    const totalUnitsResult = await Product.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalUnits: { $sum: "$stock" },
+        },
+      },
+    ]);
+
+    const totalUnits = totalUnitsResult[0]?.totalUnits || 0;
+
     const totalPages = Math.ceil(totalProducts / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
@@ -326,6 +339,7 @@ const getProduct = async (req, res, next) => {
         page,
         limit,
         totalProducts,
+        totalUnits,
         totalPages,
         currentPageProducts,
         hasNextPage,
@@ -393,17 +407,57 @@ const getProductCategories = async (req, res, next) => {
 
 const getStockHistory = async (req, res, next) => {
   try {
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+
+    if (!Number.isInteger(page) || page < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Page must be a positive integer",
+      });
+    }
+
+    if (!Number.isInteger(limit) || limit < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be a positive integer",
+      });
+    }
+
+    if (limit > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit cannot be greater than 100",
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    const totalRecords = await stockMovement.countDocuments();
+
     const history = await stockMovement
       .find()
       .populate("product", "name")
       .populate("performedBy", "name")
-      .sort({ createAt: -1 });
-    
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalPages = Math.ceil(totalRecords / limit) || 1;
+
     res.status(200).json({
       success: true,
       message: "Stock history fetched successfully",
-      count: history.lenght,
+      count: history.length,
       data: history,
+      pagination: {
+        page,
+        limit,
+        totalRecords,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
     });
   } catch (error) {
     next(error);
