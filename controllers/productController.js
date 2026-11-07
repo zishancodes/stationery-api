@@ -492,7 +492,7 @@ const updateProduct = async (req, res, next) => {
 
   try {
     const id = req.params.id;
-    const { name, price, stock, category } = req.body;
+    const { name, price, stock, category, reason } = req.body;
 
     // Step 1: Validate the incoming data.
     if (!name) {
@@ -556,7 +556,7 @@ const updateProduct = async (req, res, next) => {
               previousStock,
               newStock: stock,
               quantityChanged: stock - previousStock,
-              reason: "Stock updated via product edit",
+              reason: reason || "Stock updated via product edit",
               performedBy: req.user._id,
             },
           ],
@@ -617,7 +617,7 @@ const patchProduct = async (req, res, next) => {
   try {
     const id = req.params.id;
 
-    const { name, price, stock, category } = req.body;
+    const { name, price, stock, category, reason } = req.body;
 
     if (name !== undefined && (typeof name !== "string" || !name.trim())) {
       return res.status(400).json({
@@ -702,7 +702,7 @@ const patchProduct = async (req, res, next) => {
             previousStock,
             newStock: product.stock,
             quantityChanged,
-            reason: "Stock updated via partial edit",
+            reason: reason || "Stock updated via partial edit",
             performedBy: req.user._id,
           },
           ],

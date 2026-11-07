@@ -229,6 +229,76 @@ async function renderCharts() {
   }
 }
 
+//helper function
+function renderAlertItems(products, container, emptyMessage) {
+  if (products.length === 0) {
+    const p = document.createElement("p");
+    p.className = "empty-alert-text";
+    p.textContent = emptyMessage;
+    container.appendChild(p);
+    return;
+  }
+
+  const list = document.createElement("ul");
+  list.className = "alert-list";
+
+  products.forEach((product) => {
+    const item = document.createElement("li");
+    item.className = "alert-item";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "alert-product-name";
+    nameSpan.textContent = product.name;
+
+    const stockSpan = document.createElement("span");
+    stockSpan.className = "alert-stock-badge";
+    stockSpan.textContent = `${product.stock} left`;
+
+    item.append(nameSpan, stockSpan);
+    list.appendChild(item);
+  });
+
+  container.appendChild(list);
+}
+
+//renderinventoryalerts
+
+function renderInventoryAlerts(products) {
+  // Separate out-of-stock and low-stock products
+  const outOfStockProducts = products.filter(
+    (product) => Number(product.stock) === 0,
+  );
+
+  const lowStockProducts = products.filter(
+    (product) => Number(product.stock) > 0 && Number(product.stock) <= 5,
+  );
+
+  // Update alert counts
+  document.getElementById("outOfStockAlertsCount").textContent =
+    outOfStockProducts.length;
+
+  document.getElementById("lowStockAlertsCount").textContent =
+    lowStockProducts.length;
+
+  // Get alert containers
+  const outOfStockList = document.getElementById("outOfStockAlertsList");
+  const lowStockList = document.getElementById("lowStockAlertsList");
+
+  // Clear previous alerts
+  outOfStockList.replaceChildren();
+  lowStockList.replaceChildren();
+
+  // Render out-of-stock alerts
+  renderAlertItems(
+    outOfStockProducts,
+    outOfStockList,
+    "No out-of-stock products.",
+  );
+
+  // Render low-stock alerts
+  renderAlertItems(lowStockProducts, lowStockList, "No low-stock products.");
+}
+
 async function loadProducts() {
   const productTableBody = document.getElementById("productTableBody");
   const dashboardMessage = document.getElementById("dashboardMessage");
@@ -280,33 +350,37 @@ async function loadProducts() {
       throw new Error(result.message || "Failed to load products");
     }
 
-    console.log("Products API response:", result);
-
     window.products = result.data;
     const products = window.products;
 
-    const lowStockResponse = await fetch(
-      "/api/products/low-stock",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    // Fetch low-stock products for alerts & metrics
+    const lowStockResponse = await fetch("/api/products/low-stock", {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
 
     const lowStockResult = await lowStockResponse.json();
     if (!lowStockResponse.ok || !lowStockResult.success) {
       throw new Error("Unable to load low-stock products.");
     }
 
-    // Filter out products with exactly 0 stock for "Out of Stock", and 1-5 for "Low Stock"
     const allLowStockProducts = lowStockResult.data || [];
     const outOfStockCount = allLowStockProducts.filter(
-      (p) => p.stock === 0,
+      (p) => Number(p.stock) === 0,
     ).length;
     const lowStockCount = allLowStockProducts.filter(
-      (p) => p.stock > 0 && p.stock <= 5,
+      (p) => Number(p.stock) > 0 && Number(p.stock) <= 5,
     ).length;
+
+    // Update Notification Badge & Alerts Section
+    const totalAlertsCount = outOfStockCount + lowStockCount;
+    const notificationBadge = document.querySelector(".notification-badge");
+    if (notificationBadge) {
+      notificationBadge.textContent = totalAlertsCount;
+    }
+
+    renderInventoryAlerts(allLowStockProducts);
 
     document.getElementById("totalProducts").textContent =
       result.pagination.totalProducts;
@@ -723,6 +797,7 @@ editProductForm.addEventListener("submit", async (event) => {
     category: document.getElementById("editProductCategory").value.trim(),
     price: Number(document.getElementById("editProductPrice").value),
     stock: Number(document.getElementById("editProductStock").value),
+    reason: document.getElementById("editStockReason").value,
   };
 
   try {
@@ -753,7 +828,6 @@ editProductForm.addEventListener("submit", async (event) => {
 
     document.getElementById("addProductButton").hidden =
       JSON.parse(sessionStorage.getItem("user")).role !== "admin";
-
   } catch (error) {
     console.error("Update product failed:", error);
 
@@ -893,7 +967,6 @@ nextHistoryPageButton.addEventListener("click", async () => {
 
 loadStockHistory();
 
-
 // Safe Event Listener for Global Search
 const globalSearchInput = document.getElementById("globalSearchInput");
 if (globalSearchInput) {
@@ -903,6 +976,18 @@ if (globalSearchInput) {
     if (mainSearchInput) {
       mainSearchInput.value = searchTerm;
       mainSearchInput.dispatchEvent(new Event("input"));
+    }
+  });
+}
+
+//Header - Notification button
+
+const notificationButton = document.getElementById("notificationButton");
+if (notificationButton) {
+  notificationButton.addEventListener("click", () => {
+    const alertsSection = document.getElementById("alerts");
+    if (alertsSection) {
+      alertsSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });
 }

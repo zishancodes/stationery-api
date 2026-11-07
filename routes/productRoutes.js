@@ -153,9 +153,9 @@ const { authorize } = require("../middleware/authorize");
  */
 router.post("/products", protect, authorize("admin"), addProduct);
 
-router.get("/products", getProduct);
+router.get("/products", protect, getProduct);
 
-router.get("/products/categories", getProductCategories);
+router.get("/products/categories", protect,  getProductCategories);
 
 router.get("/stock-history", protect, getStockHistory);
 
@@ -178,7 +178,7 @@ router.get("/stock-history", protect, getStockHistory);
  *       400:
  *         description: Invalid threshold parameter
  */
-router.get("/products/low-stock", getLowStockProducts);
+router.get("/products/low-stock", protect, getLowStockProducts);
 
 /**
  * @openapi
@@ -272,7 +272,7 @@ router.get("/products/low-stock", getLowStockProducts);
  *       404:
  *         description: Product not found
  */
-router.get("/products/:id", getProductById);
+router.get("/products/:id", protect, getProductById);
 
 router.put("/products/:id", protect, authorize("admin"), updateProduct);
 

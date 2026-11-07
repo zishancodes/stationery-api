@@ -164,106 +164,177 @@
                 </article>
             </section>
 
+            <a href="#alerts" class="nav-link">
+                <i class="fa-solid fa-bell"></i>
+                <span>Alerts</span>
+            </a>
+
+            <!-- Inventory Alerts -->
+            <section id="alerts" class="alerts-section">
+            
+                <div class="section-heading">
+                    <div>
+                        <h2>Inventory Alerts</h2>
+                        <p>Products that need your attention.</p>
+                    </div>
+                </div>
+            
+                <div class="alerts-grid">
+            
+                    <!-- Out of Stock Alerts -->
+                    <article class="alert-card out-alert-card">
+            
+                        <div class="alert-card-heading">
+                            <h3>
+                                <i class="fa-solid fa-circle-xmark"></i>
+                                Out of Stock
+                            </h3>
+            
+                            <span id="outOfStockAlertsCount">0</span>
+                        </div>
+            
+                        <div id="outOfStockAlertsList">
+                            <p>Loading alerts...</p>
+                        </div>
+            
+                    </article>
+            
+                    <!-- Low Stock Alerts -->
+                    <article class="alert-card low-alert-card">
+            
+                        <div class="alert-card-heading">
+                            <h3>
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Low Stock
+                            </h3>
+            
+                            <span id="lowStockAlertsCount">0</span>
+                        </div>
+            
+                        <div id="lowStockAlertsList">
+                            <p>Loading alerts...</p>
+                        </div>
+            
+                    </article>
+            
+                </div>
+            
+            </section>
 
             <section id="products" class="products-section">
+                <!-- Section Header -->
                 <div class="section-heading">
                     <div>
                         <h2>Products</h2>
                         <p>View your stationery inventory.</p>
                     </div>
-
-                <!-- Product Search Input -->
-                <div class="product-search">
-                    <label for="productSearch">Search products</label>
-                    <input type="search" id="productSearch" placeholder="Search by product name or category..." autocomplete="off" />
-                </div>
-                
-                <!-- Product Sort Dropdown -->
-                <div class="product-sort">
-                    <label for="productSort">Sort products</label>
-                    <select id="productSort">
-                        <option value="default">Default order</option>
-                        <option value="name-asc">Name: A to Z</option>
-                        <option value="name-desc">Name: Z to A</option>
-                        <option value="price-asc">Price: Low to High</option>
-                        <option value="price-desc">Price: High to Low</option>
-                        <option value="stock-asc">Stock: Low to High</option>
-                        <option value="stock-desc">Stock: High to Low</option>
-                    </select>
-                </div>
-
-                <!-- Product Category Filter -->
-                <div class="product-filter">
-                    <label for="productCategory">Filter by category</label>
-                    <select id="productCategory">
-                        <option value="all">All categories</option>
-                    </select>
-                </div>
-
-
-
+            
                     <!-- Add product Button -->
                     <button id="addProductButton" type="button" hidden>
                         + Add product
                     </button>
-
-                    <form id="addProductForm" hidden>
-                        <h3>Add a new product</h3>
-                    
-                        <label for="productName">Product name</label>
-                        <input type="text" id="productName" name="name" minlength="5" required>
-                    
-                        <label for="newProductCategory">Category</label>
-                        <input type="text" id="newProductCategory" name="category" required>
-                    
-                        <label for="productPrice">Price (₹)</label>
-                        <input type="number" id="productPrice" name="price" min="0" step="0.01" required>
-                    
-                        <label for="productStock">Stock quantity</label>
-                        <input type="number" id="productStock" name="stock" min="0" step="1" required>
-                    
-                        <button type="submit" id="saveProductButton">
+                </div>
+            
+                <!-- Products Controls Toolbar (Search, Sort, Filter) -->
+                <div class="products-toolbar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <!-- Product Search Input -->
+                    <div class="product-search">
+                        <label for="productSearch">Search products</label>
+                        <input type="search" id="productSearch" placeholder="Search by product name or category..."
+                            autocomplete="off" />
+                    </div>
+            
+                    <!-- Product Sort Dropdown -->
+                    <div class="product-sort">
+                        <label for="productSort">Sort products</label>
+                        <select id="productSort">
+                            <option value="default">Default order</option>
+                            <option value="name-asc">Name: A to Z</option>
+                            <option value="name-desc">Name: Z to A</option>
+                            <option value="price-asc">Price: Low to High</option>
+                            <option value="price-desc">Price: High to Low</option>
+                            <option value="stock-asc">Stock: Low to High</option>
+                            <option value="stock-desc">Stock: High to Low</option>
+                        </select>
+                    </div>
+            
+                    <!-- Product Category Filter -->
+                    <div class="product-filter">
+                        <label for="productCategory">Filter by category</label>
+                        <select id="productCategory">
+                            <option value="all">All categories</option>
+                        </select>
+                    </div>
+                </div>
+            
+                <!-- Add Product Form -->
+                <form id="addProductForm" hidden class="product-form-card">
+                    <h3>Add a new product</h3>
+            
+                    <label for="productName">Product name</label>
+                    <input type="text" id="productName" name="name" minlength="5" required>
+            
+                    <label for="newProductCategory">Category</label>
+                    <input type="text" id="newProductCategory" name="category" required>
+            
+                    <label for="productPrice">Price (₹)</label>
+                    <input type="number" id="productPrice" name="price" min="0" step="0.01" required>
+            
+                    <label for="productStock">Stock quantity</label>
+                    <input type="number" id="productStock" name="stock" min="0" step="1" required>
+            
+                    <div class="form-actions">
+                        <button type="submit" id="saveProductButton" class="btn-primary">
                             Save product
                         </button>
-                    
-                        <button type="button" id="cancelProductButton">
+            
+                        <button type="button" id="cancelProductButton" class="btn-secondary">
                             Cancel
                         </button>
-                    
-                        <p id="productFormMessage" role="status" aria-live="polite"></p>
-                    </form>
-
-                    <!-- Edit form button...-->
-                    <form id="editProductForm" hidden>
-                        <h3>Edit product</h3>
-                    
-                        <input type="hidden" id="editProductId">
-                    
-                        <label for="editProductName">Product name</label>
-                        <input type="text" id="editProductName" name="name" minlength="5" required>
-                    
-                        <label for="editProductCategory">Category</label>
-                        <input type="text" id="editProductCategory" name="category" required>
-                    
-                        <label for="editProductPrice">Price (₹)</label>
-                        <input type="number" id="editProductPrice" name="price" min="0" step="0.01" required>
-                    
-                        <label for="editProductStock">Stock quantity</label>
-                        <input type="number" id="editProductStock" name="stock" min="0" step="1" required>
-                    
-                        <button type="submit" id="updateProductButton">
+                    </div>
+            
+                    <p id="productFormMessage" role="status" aria-live="polite"></p>
+                </form>
+            
+                <!-- Edit Product Form -->
+                <form id="editProductForm" hidden class="product-form-card">
+                    <h3>Edit product</h3>
+            
+                    <input type="hidden" id="editProductId">
+            
+                    <label for="editProductName">Product name</label>
+                    <input type="text" id="editProductName" name="name" minlength="5" required>
+            
+                    <label for="editProductCategory">Category</label>
+                    <input type="text" id="editProductCategory" name="category" required>
+            
+                    <label for="editProductPrice">Price (₹)</label>
+                    <input type="number" id="editProductPrice" name="price" min="0" step="0.01" required>
+            
+                    <label for="editProductStock">Stock quantity</label>
+                    <input type="number" id="editProductStock" name="stock" min="0" step="1" required>
+            
+                    <label for="editStockReason">Adjustment Reason</label>
+                    <select id="editStockReason" name="reason">
+                        <option value="Stock updated via product edit">General Edit / Update</option>
+                        <option value="Supplier delivery / Restock">Supplier Delivery / Restock</option>
+                        <option value="Store purchase / Counter sale">Store Purchase / Sale</option>
+                        <option value="Damaged or defective stock">Damaged or Defective Stock</option>
+                        <option value="Physical inventory count correction">Inventory Count Correction</option>
+                    </select>
+            
+                    <div class="form-actions">
+                        <button type="submit" id="updateProductButton" class="btn-primary">
                             Update product
                         </button>
-                    
-                        <button type="button" id="cancelEditButton">
+            
+                        <button type="button" id="cancelEditButton" class="btn-secondary">
                             Cancel
                         </button>
-                    
-                        <p id="editProductMessage" role="status" aria-live="polite"></p>
-                    </form>
-
-
-                </div>
+                    </div>
+            
+                    <p id="editProductMessage" role="status" aria-live="polite"></p>
+                </form>
 
                 <div class="table-wrapper">
                     <table>
